@@ -82,10 +82,12 @@ app.post('/login', (req, res) => {
 
 // 查看币种明细
 app.get('/trades', (req, res) => {
-  const tradeList = require('../../data/trade.json')
+  const tradeList = fs.readFileSync(path.resolve(currentDir, '../../data/trade.json'), {
+    encoding: 'utf8',
+  })
   res.json(
     resJson(200, {
-      list: tradeList,
+      list: JSON.parse(tradeList),
     })
   )
 })
@@ -116,7 +118,10 @@ app.put('/trades', (req, res) => {
   const {
     body: { trades },
   } = res
-  fs.writeFileSync(path.resolve(currentDir, '../../data/trade.json'), JSON.stringify(trades)) // 修改 trade.json 文件
+  fs.writeFileSync(
+    path.resolve(currentDir, '../../data/trade.json'),
+    JSON.stringify(trades, null, 2)
+  ) // 修改 trade.json 文件
   res.json(resJson(200))
 })
 
