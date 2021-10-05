@@ -10,7 +10,10 @@ const TimeInForce = require('./binance/const/TimeInForce')
 async function init() {
   let result = false // 执行结果
   try {
-    const tradeList = require(tradeFile) // 实时获取最新的数据
+    let tradeList = fs.readFileSync('./data/trade.json', {
+      encoding: 'utf8',
+    })
+    tradeList = JSON.parse(tradeList)
     if (tradeList.length > 7) {
       log('交易对数量不能超过7个,否则可能会造成请求过多被封ip')
       process.exit()
@@ -18,7 +21,6 @@ async function init() {
     const newTradeList = await Promise.all(
       tradeList.map(async (trade) => {
         const { symbol, quantity, buy_price, sell_price, buy_quantity, history_trade = [] } = trade
-
         // 没有填写买卖价格，自动生成
         if (buy_price == 0 || sell_price == 0) {
           const rate = await Api.getNewRate(symbol) // 得到新的止盈比率
