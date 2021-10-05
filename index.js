@@ -165,7 +165,7 @@ async function init() {
         return trade
       })
     )
-    fs.writeFileSync(tradeFile, JSON.stringify(newTradeList))
+    fs.writeFileSync(tradeFile, JSON.stringify(newTradeList, null, 2))
   } catch (e) {
     Api.notifyServiceError(e)
     log(e)
