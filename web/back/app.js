@@ -6,6 +6,7 @@ const fs = require('fs')
 const path = require('path')
 const { exit } = require('process')
 
+
 const { web } = require('../../config.js')
 const { resJson } = require('./utils')
 const currentDir = path.dirname(__filename)
@@ -34,6 +35,9 @@ const options = {
   },
 }
 
+// 静态资源
+app.use(express.static(path.join(currentDir, 'front')));
+
 // 跨域配置
 app.use(cors(options))
 // jwt token 设置
@@ -42,17 +46,20 @@ app.use(
     secret, // 签名的密钥 或 PublicKey
     algorithms: ['HS256'],
   }).unless({
-    path: ['/login'], // 指定路径不经过 Token 解析
+    path: ['/login', '/zmkm'], // 指定路径不经过 Token 解析
   })
 )
 app.use(function (err, req, res, next) {
-  // token 认证
-  if (err.name === 'UnauthorizedError') {
+  if (req.path.includes('static')) {
+    next()
+  }
+  else if (err.name === 'UnauthorizedError') {
     res.status(401).send('invalid token...')
   }
 })
 app.use(express.json()) // for parsing application/json
 app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
+
 
 // 查看币种明细
 app.post('/login', (req, res) => {
@@ -117,7 +124,7 @@ app.put('/config', (req, res) => {
 app.put('/trades', (req, res) => {
   const {
     body: { trades },
-  } = res
+  } = req
   fs.writeFileSync(
     path.resolve(currentDir, '../../data/trade.json'),
     JSON.stringify(trades, null, 2)
@@ -133,6 +140,11 @@ app.get('/die', (req, res) => {
     exit()
   }
   res.status(404).end()
+})
+
+// 查看币种明细
+app.get('/zmkm', (req, res) => {
+  res.sendFile(path.resolve(currentDir, './front/index.html'), {maxAge: 0})
 })
 
 app.listen(port, () => {
