@@ -10,6 +10,10 @@
   "license": "ISC",
   "dependencies": {
     "@binance/connector": "^1.5.0",
+    "cors-express": "^0.2.2",
+    "express": "^4.17.1",
+    "express-jwt": "^6.1.0",
+    "jsonwebtoken": "^8.5.1",
     "prettier": "^2.4.1"
   }
 }
