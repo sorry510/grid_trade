@@ -1,0 +1,15 @@
+{
+  "name": "binance-grid-trade",
+  "version": "1.0.0",
+  "description": "binance grid trade",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "sorry510",
+  "license": "ISC",
+  "dependencies": {
+    "@binance/connector": "^1.5.0",
+    "prettier": "^2.4.1"
+  }
+}

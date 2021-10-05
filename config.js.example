@@ -1,0 +1,8 @@
+module.exports = {
+  api_key: '',
+  api_secret: '',
+  recv_window: 4000, // 时间空窗值单位毫秒，用于客户端与服务器端时间差异,建议5秒以下
+  threshold: 0.015, //判定是否属于急速变化的，3min k线的变化率阈值
+  dingding_token: '',
+  dingding_word: '报警',
+}
