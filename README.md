@@ -4,7 +4,7 @@
 
 ### 下载项目
 ```
-git clone xxxx
+git clone https://github.com/sorry510/grid_trade.git
 ```
 
 ### 安装依赖
@@ -22,6 +22,7 @@ cp data/trade.json.example data/trade.json
 
 
 #### data/trade.json 配置
+- json文件不能有注释，请删除注释
 
 ```
 [
@@ -64,6 +65,6 @@ node index.js
 
 ### 免责申明
 ！！！本项目不构成投资建议，投资者应独立决策并自行承担风险！！！
-币圈有风险，入圈须谨慎。
+！！！币圈有风险，入圈须谨慎。！！！
 
 
