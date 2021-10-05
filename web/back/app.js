@@ -6,7 +6,6 @@ const fs = require('fs')
 const path = require('path')
 const { exit } = require('process')
 
-
 const { web } = require('../../config.js')
 const { resJson } = require('./utils')
 const currentDir = path.dirname(__filename)
@@ -36,7 +35,7 @@ const options = {
 }
 
 // 静态资源
-app.use(express.static(path.join(currentDir, 'front')));
+app.use(express.static(path.join(currentDir, 'front')))
 
 // 跨域配置
 app.use(cors(options))
@@ -52,14 +51,12 @@ app.use(
 app.use(function (err, req, res, next) {
   if (req.path.includes('static')) {
     next()
-  }
-  else if (err.name === 'UnauthorizedError') {
+  } else if (err.name === 'UnauthorizedError') {
     res.status(401).send('invalid token...')
   }
 })
 app.use(express.json()) // for parsing application/json
 app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
-
 
 // 查看币种明细
 app.post('/login', (req, res) => {
@@ -144,7 +141,7 @@ app.get('/die', (req, res) => {
 
 // 查看币种明细
 app.get('/zmkm', (req, res) => {
-  res.sendFile(path.resolve(currentDir, './front/index.html'), {maxAge: 0})
+  res.sendFile(path.resolve(currentDir, './front/index.html'), { maxAge: 0 })
 })
 
 app.listen(port, () => {
