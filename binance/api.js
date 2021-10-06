@@ -205,15 +205,15 @@ module.exports = {
   orderTest,
 }
 
-if (__filename === process.mainModule.filename) {
-  ;(async () => {
-    // MARKET 模式一直报 400 错误
-    const res = await order('BNBUSDT', 'BUY', 'LIMIT', {
-      price: 420,
-      recvWindow: 4000,
-      timeInForce: 'GTC',
-      quantity: 0.024,
-    })
-    console.log(res)
-  })()
-}
+// if (__filename === process.mainModule.filename) {
+//   ;(async () => {
+//     // MARKET 模式一直报 400 错误
+//     const res = await order('BNBUSDT', 'BUY', 'LIMIT', {
+//       price: 420,
+//       recvWindow: 4000,
+//       timeInForce: 'GTC',
+//       quantity: 0.024,
+//     })
+//     console.log(res)
+//   })()
+// }

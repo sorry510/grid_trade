@@ -9,18 +9,44 @@ const TimeInForce = require('./binance/const/TimeInForce')
 
 async function init() {
   let result = false // 执行结果
+
+  let tradeList = fs.readFileSync('./data/trade.json', {
+    encoding: 'utf8',
+  })
   try {
-    let tradeList = fs.readFileSync('./data/trade.json', {
-      encoding: 'utf8',
-    })
     tradeList = JSON.parse(tradeList)
-    if (tradeList.length > 7) {
-      log('交易对数量不能超过7个,否则可能会造成请求过多被封ip')
-      process.exit()
-    }
+  } catch (e) {
+    log('./data/trade.json 文件已损坏，请修复后再使用')
+    Api.notifyServiceError('./data/trade.json 文件已损坏，请修复后再使用')
+    await sleep(3600 * 1000) // 避免使用守护进程时导致的无限重启
+    process.exit()
+  }
+
+  if (tradeList.filter((item) => !item.stop).length > 10) {
+    log('正在运行的交易对数量不能超过10个,否则可能会造成请求过多被封ip')
+    Api.notifyServiceError('正在运行的交易对数量不能超过10个,否则可能会造成请求过多被封ip')
+    await sleep(3600 * 1000)
+    process.exit()
+  }
+  try {
+    // 并发请求，限制交易对数量
     const newTradeList = await Promise.all(
       tradeList.map(async (trade) => {
-        const { symbol, quantity, buy_price, sell_price, buy_quantity, history_trade = [] } = trade
+        const {
+          symbol,
+          quantity,
+          buy_price,
+          sell_price,
+          buy_quantity,
+          stop,
+          history_trade = [],
+        } = trade
+
+        // 暂停交易
+        if (stop) {
+          return trade
+        }
+
         // 没有填写买卖价格，自动生成
         if (buy_price == 0 || sell_price == 0) {
           const rate = await Api.getNewRate(symbol) // 得到新的止盈比率
@@ -100,8 +126,8 @@ async function init() {
           }
         } else if (sell_price < nowPrice && !(await Api.inTrending(symbol, BuySide.SELL))) {
           // 是否卖出进行判定,设定卖出价格 < 当前价格,没有处于上涨趋势中
-          const rate = await Api.getNewRate(symbol)
           let res
+          const rate = await Api.getNewRate(symbol)
           const quantityTrue = buy_quantity >= quantity ? quantity : buy_quantity // 真实的交易量
           if (quantityTrue > 0) {
             // 账号有交易数量
@@ -111,11 +137,6 @@ async function init() {
                 quantity: quantityTrue, // 交易数量
                 price: sell_price, // marker 模式一直报错，只能使用这个
               }) // 以当前市价下单
-              // test
-              // res = {
-              //   orderId: 1,
-              //   fills: [{ price: 437 }],
-              // }
             } catch (e) {
               Api.notifySellOrderFail(symbol, e)
               log(e)
@@ -167,10 +188,11 @@ async function init() {
         return trade
       })
     )
-    fs.writeFileSync(tradeFile, JSON.stringify(newTradeList, null, 2))
+    fs.writeFileSync(tradeFile, JSON.stringify(newTradeList, null, 2)) // 更新交易配置
   } catch (e) {
-    Api.notifyServiceError(e)
     log(e)
+    Api.notifyServiceError(e)
+    await sleep(5 * 1000) // 发生币安接口的网络错误暂停 5 秒
   }
   return result
 }

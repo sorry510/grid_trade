@@ -3,6 +3,8 @@ const KlineType = require('../binance/const/KlineType')
 const BuySide = require('../binance/const/BuySide')
 const notify = require('../notify')
 const config = require('../config')
+const { dateFormat } = require('./utils')
+const author = '<sorry510sf@gmail.com>'
 
 /**
  * 检查是否在趋势当中
@@ -97,35 +99,80 @@ async function getNewRate(symbol, interval = '4h', limit = 40) {
 
 /*********************************************************通知相关******************************************************************** */
 
-async function notifyBuyOrderSuccess(symbol, quantity, price) {
-  const content = `买入币种为：${symbol}, 买单量为：${quantity}, 买单价格为：${price}`
-  await notify(content)
-}
-
 async function notifySymbolChange(trade) {
   const { symbol, quantity, buy_price, sell_price, rate } = trade
-  const content = `币种价格变更：${symbol}, 买单价格为：${buy_price}, 卖单价格为：${sell_price}, 交易数量为：${quantity}, 止盈率为：${rate} %`
-  await notify(content)
+  const text = `## 交易通知
+  #### **币种**：${symbol}
+  #### **类型**：<font color="#ff0000">价格变更</font>
+  #### **买单价格**：<font color="#008000">${Math.round(buy_price, 6)}</font>
+  #### **卖单价格**：<font color="#008000">${Math.round(sell_price, 6)}</font>
+  #### **交易数量**：<font color="#008000">${Math.round(quantity, 6)}</font>
+  #### **止盈率**：<font color="#008000">${Math.round(rate, 2)}%</font>
+  #### **时间**：${dateFormat()}
+
+  > author ${author}`
+  await notify(text)
+}
+
+async function notifyBuyOrderSuccess(symbol, quantity, price) {
+  const text = `## 交易通知
+  #### **币种**：${symbol}
+  #### **类型**：<font color="#ff0000">买单</font>
+  #### **买单价格**：<font color="#008000">${Math.round(price, 6)}</font>
+  #### **买单数量**：<font color="#008000">${Math.round(quantity, 6)}</font>
+  #### **时间**：${dateFormat()}
+
+  > author ${author}`
+  await notify(text)
 }
 
 async function notifyBuyOrderFail(symbol, info) {
-  const content = `买入币种为：${symbol}, 买单失败, 详细信息为: ${info}"`
-  await notify(content)
+  const text = `## 交易通知
+  #### **币种**：${symbol}
+  #### **类型**：<font color="#ff0000">买单失败</font>
+  >${info}
+  
+  #### **时间**：${dateFormat()}
+
+  > author ${author}`
+  await notify(text)
 }
 
 async function notifySellOrderSuccess(symbol, quantity, price, profit) {
-  const content = `卖出币种为：${symbol}, 卖单量为：${quantity}, 卖单价格为：${price}，预计盈利: ${profit} USDT`
+  const text = `## 交易通知
+  #### **币种**：${symbol}
+  #### **类型**：<font color="#ff0000">卖单</font>
+  #### **卖单价格**：<font color="#008000">${Math.round(price, 6)}</font>
+  #### **卖单数量**：<font color="#008000">${Math.round(quantity, 6)}</font>
+  #### **预计盈利**：<font color="#008000">${Math.round(profit, 6)} USDT</font>
+  #### **时间**：${dateFormat()}
+
+  > author ${author}`
+  await notify(text)
   await notify(content)
 }
 
 async function notifySellOrderFail(symbol, info) {
-  const content = `卖出币种为：${symbol}, 卖单失败, 详细信息为: ${info}`
-  await notify(content)
+  const text = `## 交易通知
+  #### **币种**：${symbol}
+  #### **类型**：<font color="#ff0000">卖单失败</font>
+  >${info}
+  
+  #### **时间**：${dateFormat()}
+
+  > author ${author}`
+  await notify(text)
 }
 
 async function notifyServiceError(info) {
-  const content = `做多网格交易服务异常, 错误原因为: ${info}`
-  await notify(content)
+  const text = `## 交易通知
+  #### **类型**：<font color="#ff0000">交易服务异常</font>
+  >${info}
+  
+  #### **时间**：${dateFormat()}
+
+  > author ${author}`
+  await notify(text)
 }
 
 module.exports = {

@@ -9,6 +9,7 @@ const { exit } = require('process')
 const { web } = require('../../config.js')
 const { resJson } = require('./utils')
 const currentDir = path.dirname(__filename)
+const webIndex = '/zmkm'
 
 const app = express()
 const port = web.port || 2222
@@ -45,14 +46,16 @@ app.use(
     secret, // 签名的密钥 或 PublicKey
     algorithms: ['HS256'],
   }).unless({
-    path: ['/login', '/zmkm'], // 指定路径不经过 Token 解析
+    path: ['/login', webIndex], // 指定路径不经过 Token 解析
   })
 )
 app.use(function (err, req, res, next) {
   if (req.path.includes('static')) {
+    // 避免静态资源被jwt校验
     next()
   } else if (err.name === 'UnauthorizedError') {
-    res.status(401).send('invalid token...')
+    // res.status(401).send('invalid token...')
+    res.status(404).end()
   }
 })
 app.use(express.json()) // for parsing application/json
@@ -80,7 +83,7 @@ app.post('/login', (req, res) => {
       })
     )
   } else {
-    res.status(401).end()
+    res.json(resJson(101, '账号或密码错误'))
   }
 })
 
@@ -139,9 +142,9 @@ app.get('/die', (req, res) => {
   res.status(404).end()
 })
 
-// 查看币种明细
-app.get('/zmkm', (req, res) => {
-  res.sendFile(path.resolve(currentDir, './front/index.html'), { maxAge: 0 })
+// 查看前台页面
+app.get(webIndex, (req, res) => {
+  res.sendFile(path.resolve(currentDir, './front/zmkm.html'), { maxAge: 0 })
 })
 
 app.listen(port, () => {
