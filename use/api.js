@@ -1,3 +1,4 @@
+const { round } = require('mathjs')
 const Api = require('../binance/api')
 const KlineType = require('../binance/const/KlineType')
 const BuySide = require('../binance/const/BuySide')
@@ -94,7 +95,7 @@ async function getNewRate(symbol, interval = '4h', limit = 40) {
   for (let i = 0; i < lines.length; i++) {
     rateTotal += Math.abs(Number(lines[i][3]) - Number(lines[i][2])) / Number(lines[i][4]) // (最高价 - 最低价) / 收盘价
   }
-  return Math.round((rateTotal / limit) * 100, 2)
+  return round((rateTotal / limit) * 100, 2)
 }
 
 /*********************************************************通知相关******************************************************************** */

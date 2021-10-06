@@ -6,6 +6,7 @@ const { sleep, log, dateFormat } = require('./use/utils')
 const BuySide = require('./binance/const/BuySide')
 const OrderType = require('./binance/const/OrderType')
 const TimeInForce = require('./binance/const/TimeInForce')
+const { round } = require('mathjs')
 
 async function init() {
   let result = false // 执行结果
@@ -52,8 +53,8 @@ async function init() {
           const rate = await Api.getNewRate(symbol) // 得到新的止盈比率
           const nowPrice = await Api.getTickerPrice(symbol) // 最新价格
           trade.rate = rate // 更新止盈率 x %
-          trade.buy_price = Math.round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
-          trade.sell_price = Math.round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
+          trade.buy_price = round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
+          trade.sell_price = round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
           Api.notifySymbolChange(trade) // 更新变化记录
           log(trade)
           return trade
@@ -93,7 +94,7 @@ async function init() {
             result = true
             let tradePrice = nowPrice // 首先默认交易价格为当前价格
             if (res['fills'] && res['fills'].length > 0 && res['fills'][0]['price']) {
-              // tradePrice = Math.round(
+              // tradePrice = round(
               //   res['fills'].reduce((carry, item) => carry + Number(item), 0) / res['fills'].length,
               //   6
               // )
@@ -113,13 +114,13 @@ async function init() {
             trade.history_trade = history_trade // 更新买卖历史记录
             trade.rate = rate // 更新止盈率 x %
             trade.buy_quantity += quantity // 更新已购买数量
-            trade.buy_price = Math.round(tradePrice * (1 - trade.rate / 100), 6) // 更新买入价格
+            trade.buy_price = round(tradePrice * (1 - trade.rate / 100), 6) // 更新买入价格
             if (trade.buy_price > nowPrice) {
-              trade.buy_price = Math.round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
+              trade.buy_price = round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
             }
-            trade.sell_price = Math.round(tradePrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
+            trade.sell_price = round(tradePrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
             if (trade.sell_price < nowPrice) {
-              trade.sell_price = Math.round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
+              trade.sell_price = round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
             }
             Api.notifySymbolChange(trade) // 更新变化记录
             log(trade)
@@ -168,17 +169,17 @@ async function init() {
               }) // 像头部插入一条，这样容易直接找到最新的记录
               trade.history_trade = history_trade // 更新买卖历史记录
               trade.buy_quantity -= quantityTrue // 更新已购买数量
-              trade.buy_price = Math.round(tradePrice * (1 - trade.rate / 100), 6) // 更新买入价格
-              trade.sell_price = Math.round(tradePrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
+              trade.buy_price = round(tradePrice * (1 - trade.rate / 100), 6) // 更新买入价格
+              trade.sell_price = round(tradePrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
             }
           }
           // 只要满足卖出条件，即使没有买入过币种，也要更新买卖的价格，可以防止踏空
           trade.rate = rate // 更新止盈率 x %
           if (trade.buy_price > nowPrice) {
-            trade.buy_price = Math.round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
+            trade.buy_price = round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
           }
           if (trade.sell_price < nowPrice) {
-            trade.sell_price = Math.round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
+            trade.sell_price = round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
           }
           Api.notifySymbolChange(trade) // 更新变化记录
           log(trade)
