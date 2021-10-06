@@ -208,11 +208,14 @@ module.exports = {
 // if (__filename === process.mainModule.filename) {
 //   ;(async () => {
 //     // MARKET 模式一直报 400 错误
-//     const res = await order('BNBUSDT', 'BUY', 'LIMIT', {
-//       price: 420,
+//     // const { price } = await getTickerPrice('SHIBUSDT')
+//     // console.log(price)
+//     const res = await order('BTCUSDT', 'BUY', 'LIMIT', {
+//       // price,
+//       price: 45666.22,
 //       recvWindow: 4000,
 //       timeInForce: 'GTC',
-//       quantity: 0.024,
+//       quantity: 1,
 //     })
 //     console.log(res)
 //   })()

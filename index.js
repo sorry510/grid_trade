@@ -2,7 +2,7 @@ const fs = require('fs')
 const process = require('process')
 const tradeFile = './data/trade.json'
 const Api = require('./use/api')
-const { sleep, log, dateFormat } = require('./use/utils')
+const { sleep, log, dateFormat, canTradePrice } = require('./use/utils')
 const BuySide = require('./binance/const/BuySide')
 const OrderType = require('./binance/const/OrderType')
 const TimeInForce = require('./binance/const/TimeInForce')
@@ -69,6 +69,7 @@ async function init() {
         }
 
         const nowPrice = await Api.getTickerPrice(symbol) // 最新价格
+        // const findOneSellTrade =
         // 判定是否下单
         if (buy_price >= nowPrice && !(await Api.inTrending(symbol, BuySide.BUY))) {
           // 是否买入进行判定,设定价格 >= 当前价格,没有处于下降趋势中
@@ -78,7 +79,7 @@ async function init() {
             res = await Api.order(symbol, BuySide.BUY, OrderType.LIMIT, {
               timeInForce: TimeInForce.GTC, // 成交为止，订单会一直有效
               quantity, // 交易数量
-              price: buy_price, // marker 模式一直报错，只能使用这个,虽然是当前价格比现价高，但是会以现价买入
+              price: canTradePrice(buy_price), // marker 模式一直报错，只能使用这个,虽然是当前价格比现价高，但是会以现价买入
             }) // 以当前市价下单
             // test
             // res = {
@@ -86,8 +87,10 @@ async function init() {
             //   fills: [{ price: 423 }],
             // }
           } catch (e) {
-            Api.notifyBuyOrderFail(symbol, e)
+            // 当前撮合交易失败
             log(e)
+            Api.notifyBuyOrderFail(symbol, e)
+            return trade
           }
           if (res && res.orderId) {
             // 交易成功
@@ -103,15 +106,6 @@ async function init() {
             Api.notifyBuyOrderSuccess(symbol, quantity, tradePrice) // 发送通知
             log(`买入币种为：${symbol}, 买单量为：${quantity}, 买单价格为：${tradePrice}`)
 
-            history_trade.unshift({
-              symbol,
-              quantity,
-              price: tradePrice,
-              side: BuySide.BUY,
-              time: dateFormat(),
-              isSell: false,
-            }) // 像头部插入一条，这样容易直接找到最新的记录
-            trade.history_trade = history_trade // 更新买卖历史记录
             trade.rate = rate // 更新止盈率 x %
             trade.buy_quantity += quantity // 更新已购买数量
             trade.buy_price = round(tradePrice * (1 - trade.rate / 100), 6) // 更新买入价格
@@ -122,6 +116,16 @@ async function init() {
             if (trade.sell_price < nowPrice) {
               trade.sell_price = round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
             }
+            history_trade.unshift({
+              symbol,
+              quantity,
+              price: tradePrice,
+              side: BuySide.BUY,
+              time: dateFormat(),
+              sell_price, // 根据当时的买入价格，设定应该卖出的价格
+              isSell: false,
+            }) // 像头部插入一条，这样容易直接找到最新的记录
+            trade.history_trade = history_trade // 更新买卖历史记录
             Api.notifySymbolChange(trade) // 更新变化记录
             log(trade)
           }
@@ -136,11 +140,13 @@ async function init() {
               res = await Api.order(symbol, BuySide.SELL, OrderType.LIMIT, {
                 timeInForce: TimeInForce.GTC, // 成交为止，订单会一直有效
                 quantity: quantityTrue, // 交易数量
-                price: sell_price, // marker 模式一直报错，只能使用这个
+                price: canTradePrice(sell_price), // marker 模式一直报错，只能使用这个,每个币的小数位数不同，只能截取2位
               }) // 以当前市价下单
             } catch (e) {
-              Api.notifySellOrderFail(symbol, e)
+              // 当前撮合交易失败
               log(e)
+              Api.notifySellOrderFail(symbol, e)
+              return trade
             }
             if (res && res.orderId) {
               result = true

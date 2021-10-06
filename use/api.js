@@ -150,7 +150,6 @@ async function notifySellOrderSuccess(symbol, quantity, price, profit) {
 
   > author ${author}`
   await notify(text)
-  await notify(content)
 }
 
 async function notifySellOrderFail(symbol, info) {
