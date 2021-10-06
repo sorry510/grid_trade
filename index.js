@@ -55,8 +55,8 @@ async function init() {
           trade.rate = rate // 更新止盈率 x %
           trade.buy_price = round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
           trade.sell_price = round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
-          Api.notifySymbolChange(trade) // 更新变化记录
           log(trade)
+          Api.notifySymbolChange(trade) // 更新变化记录
           return trade
         }
 
@@ -65,11 +65,22 @@ async function init() {
           const msg = `币种${symbol} 的下单金额必须 >= 10 usdt`
           log(msg)
           Api.notifyServiceError(msg)
+          await sleep(10 * 1000)
           return trade
         }
 
         const nowPrice = await Api.getTickerPrice(symbol) // 最新价格
-        // const findOneSellTrade =
+        let expect_sell_price = sell_price // 预期的卖单价
+
+        const noSellTrade = history_trade.filter(
+          (item) => item.side === BuySide.BUY && item.isSell === false
+        ) // 没有卖出的买单记录
+        let lastBuyTrade
+        if (noSellTrade.length > 0) {
+          expect_sell_price = Math.min(...noSellTrade.map((item) => Number(item.sell_price))) // 取一个最低的卖单价
+          lastBuyTrade = noSellTrade.find((item) => Number(item.sell_price) === expect_sell_price)
+        }
+
         // 判定是否下单
         if (buy_price >= nowPrice && !(await Api.inTrending(symbol, BuySide.BUY))) {
           // 是否买入进行判定,设定价格 >= 当前价格,没有处于下降趋势中
@@ -97,14 +108,10 @@ async function init() {
             result = true
             let tradePrice = nowPrice // 首先默认交易价格为当前价格
             if (res['fills'] && res['fills'].length > 0 && res['fills'][0]['price']) {
-              // tradePrice = round(
-              //   res['fills'].reduce((carry, item) => carry + Number(item), 0) / res['fills'].length,
-              //   6
-              // )
               tradePrice = res['fills'][0]['price'] // 更新为交易记录中的第一个价格
             }
-            Api.notifyBuyOrderSuccess(symbol, quantity, tradePrice) // 发送通知
             log(`买入币种为：${symbol}, 买单量为：${quantity}, 买单价格为：${tradePrice}`)
+            Api.notifyBuyOrderSuccess(symbol, quantity, tradePrice) // 发送通知
 
             trade.rate = rate // 更新止盈率 x %
             trade.buy_quantity += quantity // 更新已购买数量
@@ -124,23 +131,23 @@ async function init() {
               time: dateFormat(),
               sell_price, // 根据当时的买入价格，设定应该卖出的价格
               isSell: false,
-            }) // 像头部插入一条，这样容易直接找到最新的记录
+            }) // 头部插入一条，这样容易直接找到最新的记录
             trade.history_trade = history_trade // 更新买卖历史记录
-            Api.notifySymbolChange(trade) // 更新变化记录
             log(trade)
+            Api.notifySymbolChange(trade) // 更新变化记录
           }
-        } else if (sell_price < nowPrice && !(await Api.inTrending(symbol, BuySide.SELL))) {
-          // 是否卖出进行判定,设定卖出价格 < 当前价格,没有处于上涨趋势中
+        } else if (expect_sell_price <= nowPrice && !(await Api.inTrending(symbol, BuySide.SELL))) {
+          // 是否卖出进行判定,设定卖出价格 <= 当前价格,没有处于上涨趋势中
           let res
           const rate = await Api.getNewRate(symbol)
           const quantityTrue = buy_quantity >= quantity ? quantity : buy_quantity // 真实的交易量
           if (quantityTrue > 0) {
-            // 账号有交易数量
+            // 账号有货币数量
             try {
               res = await Api.order(symbol, BuySide.SELL, OrderType.LIMIT, {
                 timeInForce: TimeInForce.GTC, // 成交为止，订单会一直有效
                 quantity: quantityTrue, // 交易数量
-                price: canTradePrice(sell_price), // marker 模式一直报错，只能使用这个,每个币的小数位数不同，只能截取2位
+                price: canTradePrice(expect_sell_price), // marker 模式一直报错，只能使用limit,每个币的小数位数不同，需要截取不同位数
               }) // 以当前市价下单
             } catch (e) {
               // 当前撮合交易失败
@@ -154,23 +161,21 @@ async function init() {
               if (res['fills'] && res['fills'][0] && res['fills'][0]['price']) {
                 tradePrice = res['fills'][0]['price'] // 交易价格
               }
-              const lastBuyTrade = history_trade.find(
-                (item) => item.side === BuySide.BUY && item.isSell === false
-              ) // 最后一次买入记录
               let profit = '未知' // 盈利多少
               if (lastBuyTrade) {
                 profit = (tradePrice - lastBuyTrade.price) * quantityTrue
                 lastBuyTrade.isSell = true // 更新此记录为已卖出
               }
-              Api.notifySellOrderSuccess(symbol, quantityTrue, tradePrice, profit) // 发送通知
               log(
                 `币种为：${symbol}, 卖单量为：${quantityTrue}, 卖单价格为：${tradePrice}。预计盈利: ${profit} USDT`
               )
+              Api.notifySellOrderSuccess(symbol, quantityTrue, tradePrice, profit) // 发送通知
               history_trade.unshift({
                 symbol,
                 quantity: quantityTrue,
                 price: tradePrice,
                 side: BuySide.SELL,
+                profit,
                 time: dateFormat(),
               }) // 像头部插入一条，这样容易直接找到最新的记录
               trade.history_trade = history_trade // 更新买卖历史记录
@@ -187,10 +192,10 @@ async function init() {
           if (trade.sell_price < nowPrice) {
             trade.sell_price = round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
           }
-          Api.notifySymbolChange(trade) // 更新变化记录
           log(trade)
+          Api.notifySymbolChange(trade) // 更新变化记录
         } else {
-          log(`${symbol}当前的价格为：${nowPrice}, 未能满足交易`)
+          log(`${symbol}当前的价格为：${nowPrice}, 未能满足交易, 等待3秒后继续`)
         }
         return trade
       })
@@ -199,7 +204,7 @@ async function init() {
   } catch (e) {
     log(e)
     Api.notifyServiceError(e)
-    await sleep(5 * 1000) // 发生币安接口的网络错误暂停 5 秒
+    await sleep(5 * 1000) // 发生币安接口的错误暂停 5 秒
   }
   return result
 }
@@ -211,8 +216,7 @@ async function init() {
       log('wait 120 seconds')
       await sleep(120 * 1000) // 有交易成功的时候，暂停交易 2 min
     } else {
-      log('wait 2 seconds')
-      await sleep(2 * 1000) // 无交易时，暂停 2 秒
+      await sleep(3 * 1000) // 无交易时，暂停 3 秒
     }
   }
 })()
