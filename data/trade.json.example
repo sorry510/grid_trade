@@ -6,7 +6,7 @@
       "buy_price": 0,
       "sell_price": 0,
       "buy_quantity": 0,
-      "stop": false,
+      "open": true,
       "stop_loss": 0,
       "history_trade": []
   }

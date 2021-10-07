@@ -23,7 +23,7 @@ async function init() {
     process.exit()
   }
 
-  if (tradeList.filter((item) => !item.stop).length > 10) {
+  if (tradeList.filter((item) => item.open).length > 10) {
     log('正在运行的交易对数量不能超过10个,否则可能会造成请求过多被封ip')
     Api.notifyServiceError('正在运行的交易对数量不能超过10个,否则可能会造成请求过多被封ip')
     await sleep(3600 * 1000)
@@ -39,13 +39,13 @@ async function init() {
           buy_price,
           sell_price,
           buy_quantity,
-          stop,
+          open,
           stop_loss = 0,
           history_trade = [],
         } = trade
 
         // 暂停交易
-        if (stop) {
+        if (!open) {
           return trade
         }
 
