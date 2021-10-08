@@ -76,10 +76,10 @@ async function init() {
         const noSellTrade = history_trade.filter(
           (item) => item.side === BuySide.BUY && item.isSell === false
         ) // 没有卖出的买单记录
-        let lastBuyTrade
+        let minBuyTrade // 价格最低的卖出交易
         if (noSellTrade.length > 0) {
           expect_sell_price = Math.min(...noSellTrade.map((item) => Number(item.sell_price))) // 取一个最低的卖单价
-          lastBuyTrade = noSellTrade.find((item) => Number(item.sell_price) === expect_sell_price)
+          minBuyTrade = noSellTrade.find((item) => Number(item.sell_price) === expect_sell_price)
         }
 
         // 判定是否下单
@@ -143,7 +143,13 @@ async function init() {
           // 是否卖出进行判定,设定卖出价格 <= 当前价格,没有处于上涨趋势中
           let res
           const rate = await Api.getNewRate(symbol)
-          const quantityTrue = buy_quantity >= quantity ? quantity : buy_quantity // 真实的交易量
+          let quantityTrue = quantity // 配置的交易数量
+          if (minBuyTrade) {
+            quantityTrue = minBuyTrade.quantity // 当时交易单的数量
+          }
+          if (buy_quantity < quantityTrue) {
+            quantityTrue = buy_quantity // 当前拥有的数量为最大可交易数量
+          }
           if (quantityTrue > 0) {
             // 账号有货币数量
             try {
@@ -165,9 +171,9 @@ async function init() {
                 tradePrice = res['fills'][0]['price'] // 交易价格
               }
               let profit = 0 // 盈利多少
-              if (lastBuyTrade) {
-                profit = (tradePrice - lastBuyTrade.price) * quantityTrue
-                lastBuyTrade.isSell = true // 更新此记录为已卖出
+              if (minBuyTrade) {
+                profit = (tradePrice - minBuyTrade.price) * quantityTrue
+                minBuyTrade.isSell = true // 更新此记录为已卖出
               }
               log(
                 `币种为：${symbol}, 卖单量为：${quantityTrue}, 卖单价格为：${tradePrice}。预计盈利: ${profit} USDT`
@@ -179,7 +185,7 @@ async function init() {
                 quantity: quantityTrue, // 交易数量
                 price: tradePrice, // 卖单价格
                 side: BuySide.SELL, // 方向 卖
-                buy_price: lastBuyTrade.price || '未知', // 对应的买入价格
+                buy_price: minBuyTrade.price || '未知', // 对应的买入价格
                 profit, // 收益
                 time: dateFormat(), // 时间
               }) // 像头部插入一条，这样容易直接找到最新的记录
