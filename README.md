@@ -33,7 +33,8 @@ cp data/trade.json.example data/trade.json
       "sell_price": 0, // 卖出价格(设置为0,自动生成)
       "rate": 0, // 网格收益比率(设置为0,自动生成)
       "buy_quantity": 0, // 当前账户的买入数量(设置为0)
-      "open": true, // 是否启用当前交易对
+      "buy_open": true, // 是否启用当前买单交易
+      "sell_open": true, // 是否启用当前卖单交易
       "stop_loss": 0, // 止损率，>=0 , 0 为不设置止损
       "history_trade": [] // 历史交易记录(设置为[],自动记录历史记录)
   }

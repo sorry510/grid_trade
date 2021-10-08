@@ -220,3 +220,6 @@ module.exports = {
 //     console.log(res)
 //   })()
 // }
+// ;(async () => {
+//   console.log(await getKlines('BTCUSDT', '3m', { limit: 6 }))
+// })()

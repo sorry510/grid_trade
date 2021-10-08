@@ -23,7 +23,7 @@ async function init() {
     process.exit()
   }
 
-  if (tradeList.filter((item) => item.open).length > 10) {
+  if (tradeList.filter((item) => item.buy_open).length > 10) {
     log('正在运行的交易对数量不能超过10个,否则可能会造成请求过多被封ip')
     Api.notifyServiceError('正在运行的交易对数量不能超过10个,否则可能会造成请求过多被封ip')
     await sleep(3600 * 1000)
@@ -39,15 +39,11 @@ async function init() {
           buy_price,
           sell_price,
           buy_quantity,
-          open,
+          buy_open, // 买单开启
+          sell_open, // 卖单开启
           stop_loss = 0,
           history_trade = [],
         } = trade
-
-        // 暂停交易
-        if (!open) {
-          return trade
-        }
 
         // 没有填写买卖价格，自动生成
         if (buy_price == 0 || sell_price == 0) {
@@ -83,7 +79,7 @@ async function init() {
         }
 
         // 判定是否下单
-        if (buy_price >= nowPrice && !(await Api.inTrending(symbol, BuySide.BUY))) {
+        if (buy_open && buy_price >= nowPrice && !(await Api.inTrending(symbol, BuySide.BUY))) {
           // 是否买入进行判定,设定价格 >= 当前价格,没有处于下降趋势中
           let res
           const rate = await Api.getNewRate(symbol) // 得到新的止盈比率
@@ -139,7 +135,11 @@ async function init() {
             log(trade)
             // Api.notifySymbolChange(trade) // 更新变化记录
           }
-        } else if (expect_sell_price <= nowPrice && !(await Api.inTrending(symbol, BuySide.SELL))) {
+        } else if (
+          sell_open &&
+          expect_sell_price <= nowPrice &&
+          !(await Api.inTrending(symbol, BuySide.SELL))
+        ) {
           // 是否卖出进行判定,设定卖出价格 <= 当前价格,没有处于上涨趋势中
           let res
           const rate = await Api.getNewRate(symbol)
