@@ -2,6 +2,7 @@ const fs = require('fs')
 const process = require('process')
 const tradeFile = './data/trade.json'
 const Api = require('./use/api')
+const config = require('./config')
 const { sleep, log, dateFormat, canTradePrice } = require('./use/utils')
 const BuySide = require('./binance/const/BuySide')
 const OrderType = require('./binance/const/OrderType')
@@ -227,7 +228,7 @@ async function init() {
       log('wait 120 seconds')
       await sleep(120 * 1000) // 有交易成功的时候，暂停交易 2 min
     } else {
-      await sleep(3 * 1000) // 无交易时，暂停 3 秒
+      await sleep(config.sleep_time || 60 * 1000) // 无交易时，暂停 sleep_time 秒
     }
   }
 })()
