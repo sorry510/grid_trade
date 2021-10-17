@@ -11,10 +11,10 @@ const author = '<sorry510sf@gmail.com>'
  * 检查是否在趋势当中
  * @param {string} symbol
  */
-async function inTrending(symbol, type, limit = 6) {
-  const lines = await Api.getKlines(symbol, KlineType['3m'], { limit }) // 时间正序
-  const data = lines.map((line) => Number(line[4])) // 收盘价
-  const percents = [] // k线变化率
+async function inTrending(symbol, type, limit = 8) {
+  const lines = await Api.getKlines(symbol, KlineType['5m'], { limit }) // 时间正序
+  const data = lines.slice(0, limit - 1).map((line) => Number(line[4])) // line[4] 收盘价， 最新的 k 线小于5min，没有可用性
+  const percents = [] // k线变化率，长度=limit - 2
   for (let i = 1; i < data.length; i++) {
     percents.push((data[i] - data[i - 1]) / data[i - 1])
   }
@@ -22,27 +22,21 @@ async function inTrending(symbol, type, limit = 6) {
   if (type === BuySide.BUY) {
     // 买入方向
     if (lastPercent <= -config.threshold) {
-      // 3min 跌去 1.5%
+      // 5min 跌去 config.threshold %
       return true
     }
-    if (
-      percents.filter((item) => item <= -0.005).length >= limit - 3 &&
-      lastPercent < config.threshold
-    ) {
-      // 最近5次中3次下跌率>=0.5%，且当前k线涨幅不超过阈值
+    if (percents.filter((item) => item <= -0.005).length >= 3) {
+      // 最近6次中3次下跌率>=config.threshold%
       return true
     }
   } else if (type === BuySide.SELL) {
     // 卖出方向
     if (lastPercent >= config.threshold) {
-      // 3min 拉升 1.5%
+      // 5min 拉升 config.threshold %
       return true
     }
-    if (
-      percents.filter((item) => item >= 0.005).length >= limit - 3 &&
-      lastPercent >= -config.threshold
-    ) {
-      // 最近5次中3次拉升率>=0.5%，且最后一次跌幅不超过阈值
+    if (percents.filter((item) => item >= 0.005).length >= 3) {
+      // 最近6次中3次拉升率>=config.threshold%
       return true
     }
   }
