@@ -65,7 +65,8 @@ module.exports = {
 ### 运行程序
 
 ```
-node index.js  # 网格交易后台服务
+node ./index.js  # 网格交易买单服务
+node ./sell.js  # 网格交易卖单服务
 node web/back/app.js # 开启web服务，可以在线修改交易配置文件，实时生效
 ```
 

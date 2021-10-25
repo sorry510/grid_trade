@@ -76,7 +76,7 @@ async function init() {
         let minBuyTrade // 价格最低的卖出交易
         if (noSellTrade.length > 0) {
           expect_sell_price = Math.min(...noSellTrade.map((item) => Number(item.sell_price))) // 取一个最低的卖单价
-          minBuyTrade = noSellTrade.find((item) => Number(item.sell_price) === expect_sell_price)
+          minBuyTrade = noSellTrade.find((item) => Number(item.sell_price) === expect_sell_price) // 可能要进行的卖单
         }
 
         // 判定是否下单
@@ -129,6 +129,8 @@ async function init() {
               side: BuySide.BUY,
               time: dateFormat(),
               sell_price, // 根据当时的买入价格，设定应该卖出的价格
+              lowest_sell_price: sell_price, // 最低卖价
+              low_num: 0, // 容错次数
               stop_loss, // 止损率
               isSell: false,
             }) // 头部插入一条，这样容易直接找到最新的记录
@@ -136,78 +138,80 @@ async function init() {
             log(trade)
             // Api.notifySymbolChange(trade) // 更新变化记录
           }
-        } else if (
-          sell_open &&
-          expect_sell_price <= nowPrice &&
-          !(await Api.inTrending(symbol, BuySide.SELL))
-        ) {
-          // 是否卖出进行判定,设定卖出价格 <= 当前价格,没有处于上涨趋势中
-          let res
-          const rate = await Api.getNewRate(symbol)
-          let quantityTrue = quantity // 配置的交易数量
-          if (minBuyTrade) {
-            quantityTrue = minBuyTrade.quantity // 当时交易单的数量
-          }
-          if (buy_quantity < quantityTrue) {
-            quantityTrue = buy_quantity // 当前拥有的数量为最大可交易数量
-          }
-          if (quantityTrue > 0) {
-            // 账号有货币数量
-            try {
-              res = await Api.order(symbol, BuySide.SELL, OrderType.LIMIT, {
-                timeInForce: TimeInForce.GTC, // 成交为止，订单会一直有效
-                quantity: quantityTrue, // 交易数量
-                price: canTradePrice(expect_sell_price), // marker 模式一直报错，只能使用limit,每个币的小数位数不同，需要截取不同位数
-              }) // 以当前市价下单
-            } catch (e) {
-              // 当前撮合交易失败
-              log(e)
-              Api.notifySellOrderFail(symbol, e)
-              return trade
-            }
-            if (res && res.orderId) {
-              result = true
-              let tradePrice = nowPrice
-              if (res['fills'] && res['fills'][0] && res['fills'][0]['price']) {
-                tradePrice = res['fills'][0]['price'] // 交易价格
-              }
-              let profit = 0 // 盈利多少
-              if (minBuyTrade) {
-                profit = (tradePrice - minBuyTrade.price) * quantityTrue
-                minBuyTrade.isSell = true // 更新此记录为已卖出
-              }
-              log(
-                `币种为：${symbol}, 卖单量为：${quantityTrue}, 卖单价格为：${tradePrice}。预计盈利: ${profit} USDT`
-              )
-              Api.notifySellOrderSuccess(symbol, quantityTrue, tradePrice, profit) // 发送通知
-              // 卖单记录
-              history_trade.unshift({
-                symbol, // 币种
-                quantity: quantityTrue, // 交易数量
-                price: tradePrice, // 卖单价格
-                side: BuySide.SELL, // 方向 卖
-                buy_price: minBuyTrade.price || '未知', // 对应的买入价格
-                profit, // 收益
-                time: dateFormat(), // 时间
-              }) // 像头部插入一条，这样容易直接找到最新的记录
-              trade.history_trade = history_trade // 更新买卖历史记录
-              trade.buy_quantity -= quantityTrue // 更新已购买数量
-              trade.buy_price = round(tradePrice * (1 - trade.rate / 100), 6) // 更新买入价格
-              trade.sell_price = round(tradePrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
-            }
-          }
-          // 只要满足卖出条件，即使没有买入过币种，也要更新买卖的价格，可以防止踏空
-          trade.rate = rate // 更新止盈率 x %
-          if (trade.buy_price > nowPrice) {
-            trade.buy_price = round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
-          }
-          if (trade.sell_price < nowPrice) {
-            trade.sell_price = round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
-          }
-          log(trade)
-          // Api.notifySymbolChange(trade) // 更新变化记录
-        } else {
-          log(`${symbol}当前的价格为：${nowPrice}, 未能满足交易, 等待3秒后继续`)
+        }
+        //  else if (
+        //   sell_open &&
+        //   expect_sell_price <= nowPrice &&
+        //   !(await Api.inTrending(symbol, BuySide.SELL))
+        // ) {
+        //   // 是否卖出进行判定,设定卖出价格 <= 当前价格,没有处于上涨趋势中
+        //   let res
+        //   const rate = await Api.getNewRate(symbol)
+        //   let quantityTrue = quantity // 配置的交易数量
+        //   if (minBuyTrade) {
+        //     quantityTrue = minBuyTrade.quantity // 当时交易单的数量
+        //   }
+        //   if (buy_quantity < quantityTrue) {
+        //     quantityTrue = buy_quantity // 当前拥有的数量为最大可交易数量
+        //   }
+        //   if (quantityTrue > 0) {
+        //     // 账号有货币数量
+        //     try {
+        //       res = await Api.order(symbol, BuySide.SELL, OrderType.LIMIT, {
+        //         timeInForce: TimeInForce.GTC, // 成交为止，订单会一直有效
+        //         quantity: quantityTrue, // 交易数量
+        //         price: canTradePrice(expect_sell_price), // marker 模式一直报错，只能使用limit,每个币的小数位数不同，需要截取不同位数
+        //       }) // 以当前市价下单
+        //     } catch (e) {
+        //       // 当前撮合交易失败
+        //       log(e)
+        //       Api.notifySellOrderFail(symbol, e)
+        //       return trade
+        //     }
+        //     if (res && res.orderId) {
+        //       result = true
+        //       let tradePrice = nowPrice
+        //       if (res['fills'] && res['fills'][0] && res['fills'][0]['price']) {
+        //         tradePrice = res['fills'][0]['price'] // 交易价格
+        //       }
+        //       let profit = 0 // 盈利多少
+        //       if (minBuyTrade) {
+        //         profit = (tradePrice - minBuyTrade.price) * quantityTrue
+        //         minBuyTrade.isSell = true // 更新此记录为已卖出
+        //       }
+        //       log(
+        //         `币种为：${symbol}, 卖单量为：${quantityTrue}, 卖单价格为：${tradePrice}。预计盈利: ${profit} USDT`
+        //       )
+        //       Api.notifySellOrderSuccess(symbol, quantityTrue, tradePrice, profit) // 发送通知
+        //       // 卖单记录
+        //       history_trade.unshift({
+        //         symbol, // 币种
+        //         quantity: quantityTrue, // 交易数量
+        //         price: tradePrice, // 卖单价格
+        //         side: BuySide.SELL, // 方向 卖
+        //         buy_price: minBuyTrade.price || '未知', // 对应的买入价格
+        //         profit, // 收益
+        //         time: dateFormat(), // 时间
+        //       }) // 像头部插入一条，这样容易直接找到最新的记录
+        //       trade.history_trade = history_trade // 更新买卖历史记录
+        //       trade.buy_quantity -= quantityTrue // 更新已购买数量
+        //       trade.buy_price = round(tradePrice * (1 - trade.rate / 100), 6) // 更新买入价格
+        //       trade.sell_price = round(tradePrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
+        //     }
+        //   }
+        //   // 只要满足卖出条件，即使没有买入过币种，也要更新买卖的价格，可以防止踏空
+        //   trade.rate = rate // 更新止盈率 x %
+        //   if (trade.buy_price > nowPrice) {
+        //     trade.buy_price = round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
+        //   }
+        //   if (trade.sell_price < nowPrice) {
+        //     trade.sell_price = round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
+        //   }
+        //   log(trade)
+        //   // Api.notifySymbolChange(trade) // 更新变化记录
+        // }
+        else {
+          log(`${symbol}当前的价格为：${nowPrice}, 未能买单交易, 等待后继续`)
         }
         return trade
       })
@@ -219,6 +223,32 @@ async function init() {
     await sleep(5 * 1000) // 发生币安接口的错误暂停 5 秒
   }
   return result
+}
+
+/**
+ * 更新json 结构
+ */
+function updateJsonData() {
+  let tradeList = fs.readFileSync('./data/trade.json', {
+    encoding: 'utf8',
+  })
+  tradeList = JSON.parse(tradeList)
+  const newTradeList = tradeList.map((trade) => {
+    const { history_trade = [] } = trade
+    const new_history_trade = history_trade.map((item) => {
+      if (item.side === BuySide.BUY) {
+        if (item.sell_price) {
+          item.lowest_sell_price = item.sell_price // 最初卖价
+          item.low_num = 0
+        }
+        return item
+      }
+      return item
+    })
+    trade.history_trade = new_history_trade // 记录历史记录
+    return trade
+  })
+  fs.writeFileSync(tradeFile, JSON.stringify(newTradeList, null, 2)) // 更新交易配置
 }
 
 ;(async () => {
