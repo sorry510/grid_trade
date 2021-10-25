@@ -53,11 +53,12 @@ module.exports = {
   threshold: 0.015, // 判定是否属于急速变化的，3min k线的变化率阈值
   dingding_token: '', // 钉钉推送token
   dingding_word: '报警',  // 钉钉推送关键词
+  sleep_time: 60, // 休眠时间，不要修改
   web: { // web 服务配置(非必须，推荐)
     secret: 'asd', // jwt token 使用随便填写
-    port: 2222, // web 服务端口
+    port: 3333, // web 服务端口
     username: 'admin',  // web 服务登录账号
-    password: 'lbx6e7rCmHQXWDOV',  // web 服务登录密码
+    password: 'admin',  // web 服务登录密码
   },
 }
 ```
