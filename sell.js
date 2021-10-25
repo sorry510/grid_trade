@@ -10,7 +10,6 @@ const TimeInForce = require('./binance/const/TimeInForce')
 const { round } = require('mathjs')
 
 async function init() {
-
   let tradeList = fs.readFileSync('./data/trade.json', {
     encoding: 'utf8',
   })
@@ -36,13 +35,13 @@ async function init() {
 
         if (!sell_open) {
           // 没有开启卖单
-          continue
+          return trade
         }
 
-        const sell_history_trade = []; // 要进行的卖单操作记录
-        
+        const sell_history_trade = [] // 要进行的卖单操作记录
+
         // 遍历买单记录
-        const new_history_trade = history_trade.map(item => {
+        const new_history_trade = history_trade.map((item) => {
           if (item.side === BuySide.SELL) {
             return item // 卖单记录
           }
@@ -58,14 +57,15 @@ async function init() {
             item.low_num = 0
             return item
           }
-          const midPrice = (item.sell_price - item.lowest_sell_price) * 0.55 + item.lowest_sell_price // 中间价格
+          const midPrice =
+            (item.sell_price - item.lowest_sell_price) * 0.55 + item.lowest_sell_price // 中间价格
           if (nowPrice >= midPrice) {
             item.low_num = 0
-            return item;
+            return item
           }
           if (item.low_num < 2) {
             item.low_num += 1 // 添加容错，第3次触发条件，才进行卖出操作
-            return item;
+            return item
           }
 
           // 价格回落到 (最高价格-最初卖价格) / 50% + 最初卖价格，通过容错机制，进行卖出操作
@@ -114,11 +114,11 @@ async function init() {
               trade.sell_price = round(tradePrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
             }
           }
-          
-          return item;
+
+          return item
         })
         trade.history_trade = [...sell_history_trade, ...new_history_trade] // 记录历史记录
-        return trade;
+        return trade
       })
     )
     fs.writeFileSync(tradeFile, JSON.stringify(newTradeList, null, 2)) // 更新交易配置
