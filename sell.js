@@ -97,6 +97,7 @@ async function init() {
                 if (res['fills'] && res['fills'][0] && res['fills'][0]['price']) {
                   tradePrice = res['fills'][0]['price'] // 交易价格
                 }
+                const profit = (tradePrice - item.price) * quantityTrue
                 log(
                   `币种为：${symbol}, 卖单量为：${quantityTrue}, 卖单价格为：${tradePrice}。预计盈利: ${profit} USDT`
                 )
@@ -108,7 +109,7 @@ async function init() {
                   price: tradePrice, // 卖单价格
                   side: BuySide.SELL, // 方向 卖
                   buy_price: item.price, // 对应的买入价格
-                  profit: (tradePrice - item.price) * quantityTrue, // 盈利多少
+                  profit, // 盈利多少
                   time: dateFormat(), // 时间
                 }) // 像头部插入一条，这样容易直接找到最新的记录
 
