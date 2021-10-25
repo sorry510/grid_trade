@@ -1,6 +1,13 @@
 ## 币安网格现货交易
 
-## 使用
+## 使用页面
+![交易记录](./img/tradelist.jpg)
+![交易配置](./img/config.jpg)
+
+## 钉钉消息推送
+![钉钉推送1](./img/dingding1.jpg)
+![钉钉推送2](./img/dingding2.jpg)
+
 
 ### 下载项目
 ```
