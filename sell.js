@@ -130,7 +130,6 @@ async function init() {
     Api.notifyServiceError(e)
     await sleep(30 * 1000) // 发生币安接口的错误暂停 30 秒
   }
-  return result
 }
 
 ;(async () => {
