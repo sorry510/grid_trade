@@ -4,7 +4,7 @@ const client = new Spot(config.api_key, config.api_secret)
 const process = require('process')
 
 /**
- * 获取账号信息
+ * 获取现货账号信息
  * @returns {}
  * @example
  * {
@@ -30,6 +30,22 @@ const process = require('process')
 async function getAccount() {
   const res = await client.account()
   return res.data
+}
+
+/**
+ * 钱包数据(不知道是那个钱包)
+ * POST /sapi/v1/asset/get-funding-asset<br>
+ *
+ * {@link https://binance-docs.github.io/apidocs/spot/en/#funding-wallet-user_data}
+ *
+ * @param {object} [options]
+ * @param {string} [options.asset]
+ * @param {string} [options.needBtcValuation] - true or false
+ * @param {number} [options.recvWindow] - The value cannot be greater than 60000
+ */
+async function fundingWallet(options) {
+  const res = await client.fundingWallet(options)
+  return res
 }
 
 async function ping() {
@@ -198,6 +214,7 @@ module.exports = {
   client,
   ping,
   getAccount,
+  fundingWallet,
   getServerTime,
   getKlines,
   getTickerPrice,

@@ -84,6 +84,7 @@ async function init() {
           // 是否买入进行判定,设定价格 >= 当前价格,没有处于下降趋势中
           let res
           const rate = await Api.getNewRate(symbol) // 得到新的止盈比率
+
           try {
             res = await Api.order(symbol, BuySide.BUY, OrderType.LIMIT, {
               timeInForce: TimeInForce.GTC, // 成交为止，订单会一直有效
@@ -97,8 +98,26 @@ async function init() {
             // }
           } catch (e) {
             // 当前撮合交易失败
-            log(e)
-            Api.notifyBuyOrderFail(symbol, e)
+            let myUsdt = 0
+            try {
+              myUsdt = await Api.getWalletUsdt() // 账户中的 usdt 数量
+            } catch (e) {}
+            if (buy_price * quantity > myUsdt) {
+              Api.notifyBuyOrderFail(symbol, '当前账户余额已不足,已关闭买单操作')
+              trade.buy_open = false
+              return trade
+            } else {
+              if (!trade.error_num) {
+                trade.error_num = 1
+              } else {
+                trade.error_num++
+                if (trade.error_num > 3) {
+                  // 错误次数大于3，停止当前币种交易
+                  trade.buy_open = false
+                }
+              }
+              Api.notifyBuyOrderFail(symbol, e)
+            }
             return trade
           }
           if (res && res.orderId) {

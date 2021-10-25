@@ -54,6 +54,31 @@ async function getTickerPrice(symbol) {
 }
 
 /**
+ * 获取账户信息
+ * @returns [
+ *       { asset: 'BTC', free: '0.00400144', locked: '0.00000000' },
+ *       { asset: 'LTC', free: '0.00000000', locked: '0.00000000' },
+ *       { asset: 'ETH', free: '0.05423804', locked: '0.00000000' },
+ *       { asset: 'NEO', free: '0.00000000', locked: '0.00000000' },
+ *       { asset: 'BNB', free: '0.56369471', locked: '0.00000000' },
+ *     ]
+ */
+async function getAccount() {
+  const data = await Api.getAccount()
+  return data.balances
+}
+
+/**
+ * 获取账户的usdt可用数量
+ * @returns number
+ */
+async function getWalletUsdt() {
+  const data = await getAccount()
+  const usdtInfo = data.find((item) => item.asset === 'USDT')
+  return usdtInfo ? usdtInfo.free : 0
+}
+
+/**
  * 现货下订单(最小下单 price* quantity >=10 usdt)
  *
  * POST /api/v3/order
@@ -180,6 +205,8 @@ module.exports = {
   inTrending,
   order,
   getNewRate,
+  getAccount,
+  getWalletUsdt,
 
   notifyBuyOrderSuccess,
   notifySymbolChange,
@@ -188,3 +215,6 @@ module.exports = {
   notifySellOrderFail,
   notifyServiceError,
 }
+;(async () => {
+  console.log(JSON.stringify(await getWalletUsdt()))
+})()
