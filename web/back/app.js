@@ -7,6 +7,7 @@ const path = require('path')
 const { exit } = require('process')
 
 const { web } = require('../../config.js')
+const { getTickets } = require('../../use/api.js')
 const { resJson } = require('./utils')
 const currentDir = path.dirname(__filename)
 const webIndex = '/zmkm'
@@ -157,15 +158,14 @@ app.put('/trades', (req, res) => {
 })
 
 // 获取交易对的最新价格
-app.get('/symbol/price', (req, res) => {
-  const configText = fs.readFileSync(path.resolve(currentDir, '../../config.js'), {
+app.get('/symbol/price', async (req, res) => {
+  const tradeJson = fs.readFileSync(path.resolve(currentDir, '../../data/trade.json'), {
     encoding: 'utf8',
   })
-  res.json(
-    resJson(200, {
-      content: configText,
-    })
-  )
+  const oldTradeList = JSON.parse(tradeJson)
+  const tickets = await getTickets(oldTradeList.map((item) => item.symbol))
+
+  res.json(resJson(200, tickets))
 })
 
 // 退出后台

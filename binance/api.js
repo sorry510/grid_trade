@@ -210,6 +210,24 @@ async function getTickerPrice(symbol) {
   return res.data
 }
 
+/**
+ * 获取所有的交易对信息
+ * @returns example [
+ *   {
+ *     "symbol": "LTCBTC",
+ *     "price": "4.00000200"
+ *   },
+ *   {
+ *     "symbol": "ETHBTC",
+ *     "price": "0.07946600"
+ *   }
+ * ]
+ */
+async function getTickets() {
+  const res = await client.publicRequest('GET', '/api/v3/ticker/price')
+  return res.data
+}
+
 module.exports = {
   client,
   ping,
@@ -218,6 +236,7 @@ module.exports = {
   getServerTime,
   getKlines,
   getTickerPrice,
+  getTickets,
   order,
   orderTest,
 }

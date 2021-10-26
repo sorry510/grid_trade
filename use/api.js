@@ -54,6 +54,20 @@ async function getTickerPrice(symbol) {
 }
 
 /**
+ * 获取所有交易对
+ * @param String[] symbols
+ * @returns []
+ */
+async function getTickets(symbols = []) {
+  const data = await Api.getTickets()
+  if (symbols.length === 0) {
+    return data
+  }
+  const map = new Set(symbols)
+  return data.filter((item) => map.has(item.symbol))
+}
+
+/**
  * 获取账户信息
  * @returns [
  *       { asset: 'BTC', free: '0.00400144', locked: '0.00000000' },
@@ -202,6 +216,7 @@ async function notifyServiceError(info) {
 
 module.exports = {
   getTickerPrice,
+  getTickets,
   inTrending,
   order,
   getNewRate,
@@ -215,6 +230,7 @@ module.exports = {
   notifySellOrderFail,
   notifyServiceError,
 }
-;(async () => {
-  console.log(JSON.stringify(await getWalletUsdt()))
-})()
+// ;(async () => {
+//   // console.log(JSON.stringify(await getWalletUsdt()))
+//   console.log(await getTickerPrice())
+// })()
