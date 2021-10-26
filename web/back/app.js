@@ -156,6 +156,18 @@ app.put('/trades', (req, res) => {
   }
 })
 
+// 获取交易对的最新价格
+app.get('/symbol/price', (req, res) => {
+  const configText = fs.readFileSync(path.resolve(currentDir, '../../config.js'), {
+    encoding: 'utf8',
+  })
+  res.json(
+    resJson(200, {
+      content: configText,
+    })
+  )
+})
+
 // 退出后台
 app.get('/die', (req, res) => {
   const token = req.query._token

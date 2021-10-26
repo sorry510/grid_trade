@@ -37,41 +37,48 @@ async function init() {
           // 没有开启卖单
           return trade
         }
-
+        const rate = await Api.getNewRate(symbol) // 得到新的止盈比率
         const nowPrice = await Api.getTickerPrice(symbol) // 最新价格
-
         const sell_history_trade = [] // 要进行的卖单操作记录
 
         // 遍历买单记录
         const new_history_trade = await Promise.all(
           history_trade.map(async (item) => {
+            // 卖单记录
             if (item.side === BuySide.SELL) {
-              return item // 卖单记录
+              return item
             }
+            // 已经卖出的买单记录
             if (item.side === BuySide.BUY && item.isSell === true) {
-              return item // 已经卖出的买单记录
+              return item
             }
+            // 低于最低的卖出价格
             if (nowPrice < item.lowest_sell_price) {
-              return item // 低于最低的卖出价格
+              return item
             }
+            // 当前价格>预定卖出价格，继续等待，同时更新最新的买卖单价格
             if (nowPrice >= item.sell_price) {
-              // 当前价格>预定卖出价格
+              trade.rate = rate
+              trade.buy_price = round(tradePrice * (1 - trade.rate / 100), 6) // 更新买入价格
+              trade.sell_price = round(tradePrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
               item.sell_price = nowPrice // 将最新价格定为卖出价格
               item.low_num = 0
               return item
             }
             const midPrice =
               (item.sell_price - item.lowest_sell_price) * 0.55 + item.lowest_sell_price // 中间价格
+            // 大于中间价，继续等待
             if (nowPrice >= midPrice) {
               item.low_num = 0
               return item
             }
-            if (item.low_num < 2) {
-              item.low_num += 1 // 添加容错，第3次触发条件，才进行卖出操作
+            // 添加容错，第3次触发条件，才进行卖出操作
+            if (item.low_num < 3) {
+              item.low_num += 1
               return item
             }
 
-            // 价格回落到 (最高价格-最初卖价格) / 50% + 最初卖价格，通过容错机制，进行卖出操作
+            // 价格回落到 (最高价格-最初卖价格) / 50% + 最初卖价格，通过容错机制，准备进行卖出操作
             let quantityTrue = item.quantity // 交易单的买入数量
             if (buy_quantity < quantityTrue) {
               quantityTrue = buy_quantity // 当前拥有的数量为最大可交易数量
@@ -112,15 +119,15 @@ async function init() {
                   profit, // 盈利多少
                   time: dateFormat(), // 时间
                 }) // 像头部插入一条，这样容易直接找到最新的记录
-
-                trade.buy_quantity -= quantityTrue // 更新已购买数量
-                trade.buy_price = round(tradePrice * (1 - trade.rate / 100), 6) // 更新买入价格
-                trade.sell_price = round(tradePrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
               }
             }
             return item
           })
         )
+        trade.buy_quantity -= sell_history_trade.reduce(
+          (carry, item) => carry + Number(item.quantity),
+          0
+        ) // 更新当前购买数量
         trade.history_trade = [...sell_history_trade, ...new_history_trade] // 记录历史记录
         return trade
       })
