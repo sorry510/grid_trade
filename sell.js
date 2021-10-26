@@ -59,8 +59,8 @@ async function init() {
             // 当前价格>预定卖出价格，继续等待，同时更新最新的买卖单价格
             if (nowPrice >= item.sell_price) {
               trade.rate = rate
-              trade.buy_price = round(tradePrice * (1 - trade.rate / 100), 6) // 更新买入价格
-              trade.sell_price = round(tradePrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
+              trade.buy_price = round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
+              trade.sell_price = round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
               item.sell_price = nowPrice // 将最新价格定为卖出价格
               item.low_num = 0
               return item

@@ -125,10 +125,10 @@ app.put('/trades', (req, res) => {
   const {
     body: { trades },
   } = req
-  const tradeJson = fs.readFileSync(path.resolve(currentDir, '../../data/trade.json'), {
-    encoding: 'utf8',
-  })
-  const oldTradeList = JSON.parse(tradeJson)
+  // const tradeJson = fs.readFileSync(path.resolve(currentDir, '../../data/trade.json'), {
+  //   encoding: 'utf8',
+  // })
+  // const oldTradeList = JSON.parse(tradeJson)
 
   let result = true
   // if (trades.length != oldTradeList.length) {
@@ -136,16 +136,16 @@ app.put('/trades', (req, res) => {
   //   res.json(resJson(202, '交易类型数量不一致, 请刷新数据进行同步'))
   // }
 
-  if (result) {
-    for (let i = 0; i < oldTradeList.length; i++) {
-      const find = trades.find((item) => item.symbol === oldTradeList[i].symbol)
-      if (find && oldTradeList[i].history_trade.length !== find.history_trade.length) {
-        result = false
-        res.json(resJson(203, '交易历史记录不一致, 请刷新数据进行同步'))
-        break
-      }
-    }
-  }
+  // if (result) {
+  //   for (let i = 0; i < oldTradeList.length; i++) {
+  //     const find = trades.find((item) => item.symbol === oldTradeList[i].symbol)
+  //     if (find && oldTradeList[i].history_trade.length !== find.history_trade.length) {
+  //       result = false
+  //       res.json(resJson(203, '交易历史记录不一致, 请刷新数据进行同步'))
+  //       break
+  //     }
+  //   }
+  // }
 
   if (result) {
     fs.writeFileSync(
