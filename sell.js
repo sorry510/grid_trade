@@ -57,23 +57,28 @@ async function init() {
               return item
             }
             // 当前价格>预定卖出价格，继续等待，同时更新最新的买卖单价格
+            // 最初最低卖价=卖价，随着价格上涨，卖价不断上涨，最低卖价不变
             if (nowPrice >= item.sell_price) {
               trade.rate = rate
               trade.buy_price = round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
+              trade.highest_buy_price = trade.buy_price // 最高买入价格
               trade.sell_price = round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
-              item.sell_price = nowPrice // 将最新价格定为卖出价格
+              trade.low_num = 0
+
+              item.sell_price = nowPrice // 将最新价格定为卖出价格，提高卖价
               item.low_num = 0
               return item
             }
             const midPrice =
-              (item.sell_price - item.lowest_sell_price) * 0.55 + item.lowest_sell_price // 中间价格
+              (item.sell_price - item.lowest_sell_price) * 0.5 + item.lowest_sell_price // 最低卖价与当前卖价的中间价格
             // 大于中间价，继续等待
             if (nowPrice >= midPrice) {
               item.low_num = 0
               return item
             }
-            // 添加容错，第3次触发条件，才进行卖出操作
-            if (item.low_num < 3) {
+            // 如果前面的条件都通过，那说明当前价格小于中间价格
+            // 添加容错，第4次触发条件，才进行卖出操作
+            if (item.low_num <= 3) {
               item.low_num += 1
               return item
             }

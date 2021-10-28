@@ -57,7 +57,7 @@ module.exports = {
   api_key: '', // 币安 key
   api_secret: '', // 币安 secret
   recv_window: 4000, // 时间空窗值单位毫秒，用于客户端与服务器端时间差异,建议5秒以下
-  threshold: 0.015, // 判定是否属于急速变化的，3min k线的变化率阈值
+  threshold: 0.015, // 判定是否属于急速变化的，3min k线的变化率阈值(废弃)
   dingding_token: '', // 钉钉推送token
   dingding_word: '报警',  // 钉钉推送关键词
   sleep_time: 60, // 休眠时间，不要修改

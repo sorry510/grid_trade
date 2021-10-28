@@ -22,7 +22,10 @@ function dateFormat(format = 'Y-m-d H:i:s') {
     .replace('s', second.toString().padStart(2, 0))
 }
 
-function log(text) {
+function log(text, flag = true) {
+  if (!flag) {
+    return
+  }
   if (typeof text === 'object') {
     console.log(`${dateFormat()}: ${JSON.stringify(text)}`)
   } else {
