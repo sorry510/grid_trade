@@ -24,9 +24,9 @@ async function init() {
     process.exit()
   }
 
-  if (tradeList.filter((item) => item.buy_open).length > 20) {
-    log('正在运行的交易对数量不能超过20个,否则可能会造成请求过多被封ip')
-    Api.notifyServiceError('正在运行的交易对数量不能超过20个,否则可能会造成请求过多被封ip')
+  if (tradeList.filter((item) => item.buy_open).length > 50) {
+    log('正在运行的交易对数量不能超过50个,否则可能会造成请求过多被封ip')
+    Api.notifyServiceError('正在运行的交易对数量不能超过50个,否则可能会造成请求过多被封ip')
     await sleep(3600 * 1000)
     process.exit()
   }
