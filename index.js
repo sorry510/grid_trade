@@ -161,6 +161,7 @@ async function init() {
             trade.buy_price = round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
           }
           trade.highest_buy_price = trade.buy_price
+          trade.low_num = 0
 
           trade.sell_price = round(tradePrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
           if (trade.sell_price < nowPrice) {
