@@ -50,11 +50,6 @@ async function init() {
           return trade
         }
 
-        if (!trade.highest_buy_price) {
-          trade.highest_buy_price = trade.buy_price // 如果没有设置就设置一下最初买单价
-          trade.low_num = 0
-        }
-
         // 没有填写买卖价格，自动生成
         if (buy_price == 0 || sell_price == 0) {
           const rate = await Api.getNewRate(symbol) // 得到新的止盈比率
@@ -85,20 +80,19 @@ async function init() {
           return trade
         }
 
-        if (trade.buy_price >= nowPrice) {
+        if (nowPrice <= trade.buy_price) {
           // 设置一个更低的买单价
           trade.buy_price = nowPrice
           trade.low_num = 0
           return trade
         }
-        const midPrice = trade.highest_buy_price - (trade.highest_buy_price - trade.buy_price) * 0.5 // 最高买价与当前买价的中间价格
+        const midPrice = trade.buy_price + (trade.highest_buy_price - trade.buy_price) * 0.4 // 最高买价与当前买价的中间价格
 
-        // 大于中间价，继续等待
-        if (midPrice > nowPrice) {
+        // 低于中间价，继续等待
+        if (nowPrice <= midPrice) {
           trade.low_num = 0
           return trade
         }
-        // 如果前面的条件都通过，那说明当前价格小于中间价格
         // 添加容错，第4次触发条件，才进行卖出操作
         if (trade.low_num <= 3) {
           trade.low_num += 1
@@ -113,7 +107,7 @@ async function init() {
           res = await Api.order(symbol, BuySide.BUY, OrderType.LIMIT, {
             timeInForce: TimeInForce.GTC, // 成交为止，订单会一直有效
             quantity, // 交易数量
-            price: canTradePrice(nowPrice), // marker 模式一直报错，只能使用这个,虽然是当前价格比现价高，但是会以现价买入
+            price: canTradePrice(nowPrice),
           }) // 以当前价格下单
           // test
           // res = {
