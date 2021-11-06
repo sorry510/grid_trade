@@ -50,10 +50,11 @@ async function init() {
           return trade
         }
 
-        // 没有填写买卖价格，自动生成
-        if (buy_price == 0 || sell_price == 0) {
+        const nowPrice = await Api.getTickerPrice(symbol) // 最新价格
+
+        // 没有填写买卖价格或者当前价格高于卖出价格，自动生成新的价格
+        if (buy_price == 0 || sell_price == 0 || nowPrice >= sell_price) {
           const rate = await Api.getNewRate(symbol) // 得到新的止盈比率
-          const nowPrice = await Api.getTickerPrice(symbol) // 最新价格
           trade.rate = rate // 更新止盈率 x %
           trade.buy_price = round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
           trade.highest_buy_price = trade.buy_price // 最高买入价格
@@ -71,8 +72,6 @@ async function init() {
           trade.buy_open = false
           return trade
         }
-
-        const nowPrice = await Api.getTickerPrice(symbol) // 最新价格
 
         // 当前价格高于最初的买单价
         if (nowPrice > trade.highest_buy_price) {
