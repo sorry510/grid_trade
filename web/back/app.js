@@ -10,7 +10,7 @@ const { web } = require('../../config.js')
 const { getTickets } = require('../../use/api.js')
 const { resJson } = require('./utils')
 const currentDir = path.dirname(__filename)
-const webIndex = '/zmkm'
+const webIndex = web.index || '/zmkm'
 
 const app = express()
 const port = web.port || 2222

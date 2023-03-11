@@ -9,7 +9,7 @@ const OrderType = require('./binance/const/OrderType')
 const TimeInForce = require('./binance/const/TimeInForce')
 const { round } = require('mathjs')
 
-const flag = false // 是否输出日志
+const flag = config.log || false // 是否输出日志
 
 async function init() {
   let result = false // 执行结果
