@@ -6,6 +6,7 @@ const config = require('./config')
 const { sleep, log, dateFormat, canTradePrice } = require('./use/utils')
 const BuySide = require('./binance/const/BuySide')
 const OrderType = require('./binance/const/OrderType')
+const KlineType = require('./binance/const/KlineType')
 const TimeInForce = require('./binance/const/TimeInForce')
 const { round } = require('mathjs')
 
@@ -43,6 +44,7 @@ async function init() {
           sell_price,
           buy_open, // 买单开启
           stop_loss = 0,
+          quick = false, // 是否快速交易，适合无手续费的币
           history_trade = [],
         } = trade
         if (!buy_open) {
@@ -79,23 +81,37 @@ async function init() {
           return trade
         }
 
-        if (nowPrice <= trade.buy_price) {
-          // 设置一个更低的买单价
-          trade.buy_price = nowPrice
-          trade.low_num = 0
-          return trade
-        }
-        const midPrice = trade.buy_price + (trade.highest_buy_price - trade.buy_price) * 0.4 // 最高买价与当前买价的中间价格
+        if (quick) {
+          // 快速模式
+          const [ma2, ma20] = await Api.getMaCompare(symbol, KlineType['3m'], [2, 20])  // 3min 的 kline 最近 2 条 与 最近 20 条
+          if (ma2 <= ma20) {
+            // 跌的趋势, 不买
+            return trade
+          }
+          if (nowPrice >= trade.buy_price) {
+            // 高于买价，不买
+            return trade
+          }
+        } else {
+          // 正常模式
+          if (nowPrice <= trade.buy_price) {
+            // 设置一个更低的买单价
+            trade.buy_price = nowPrice
+            trade.low_num = 0
+            return trade
+          }
+          const midPrice = trade.buy_price + (trade.highest_buy_price - trade.buy_price) * 0.4 // 最高买价与当前买价的中间价格
 
-        // 低于中间价，继续等待
-        if (nowPrice <= midPrice) {
-          trade.low_num = 0
-          return trade
-        }
-        // 添加容错，第4次触发条件，才进行卖出操作
-        if (trade.low_num <= 3) {
-          trade.low_num += 1
-          return trade
+          // 低于中间价，继续等待
+          if (nowPrice <= midPrice) {
+            trade.low_num = 0
+            return trade
+          }
+          // 添加容错，第3次触发条件，才进行买入操作
+          if (trade.low_num <= 2) {
+            trade.low_num += 1
+            return trade
+          }
         }
 
         // 判定是否下单
@@ -193,8 +209,8 @@ async function init() {
   while (true) {
     const result = await init()
     if (result) {
-      log('wait 120 seconds', true)
-      await sleep(120 * 1000) // 有交易成功的时候，暂停交易 2 min
+      log('wait 30 seconds', true)
+      await sleep(30 * 1000) // 有交易成功的时候，暂停交易 30 秒
     } else {
       await sleep((config.sleep_time || 60) * 1000) // 无交易时，暂停 sleep_time 秒
     }

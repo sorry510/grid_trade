@@ -44,6 +44,23 @@ async function inTrending(symbol, type, limit = 8) {
 }
 
 /**
+ * 比较2个MA
+ * @param string symbol
+ * @param string type KlineType
+ * @param number keys
+ */
+async function getMaCompare(symbol, type, keys) {
+  const limit = Math.max(...keys) + 1
+  let result = await Api.getKlines(symbol, type, { limit })
+  result = result.map(item => Number(item[4])).reverse() // 改为倒序，获取最新到以前的收盘价
+
+  function avg(arr, key) {
+    return arr.slice(0, key).reduce((carry, item) => carry + item, 0) / key
+  }
+  return keys.map(key => avg(result, key))
+}
+
+/**
  * 获取某个交易对的最新价格
  * @param {string} symbol
  * @returns string
@@ -171,7 +188,7 @@ async function notifyBuyOrderFail(symbol, info) {
   #### **币种**：${symbol}
   #### **类型**：<font color="#ff0000">买单失败</font>
   >${info}
-  
+
   #### **时间**：${dateFormat()}
 
   > author ${author}`
@@ -196,7 +213,7 @@ async function notifySellOrderFail(symbol, info) {
   #### **币种**：${symbol}
   #### **类型**：<font color="#ff0000">卖单失败</font>
   >${info}
-  
+
   #### **时间**：${dateFormat()}
 
   > author ${author}`
@@ -207,7 +224,7 @@ async function notifyServiceError(info) {
   const text = `## 交易通知
   #### **类型**：<font color="#ff0000">交易服务异常</font>
   >${info}
-  
+
   #### **时间**：${dateFormat()}
 
   > author ${author}`
@@ -218,6 +235,7 @@ module.exports = {
   getTickerPrice,
   getTickets,
   inTrending,
+  getMaCompare,
   order,
   getNewRate,
   getAccount,

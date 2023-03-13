@@ -6,7 +6,7 @@ module.exports = {
   dingding_token: '',
   dingding_word: '报警',
   log: false,
-  sleep_time: 60,
+  sleep_time: 30,
   web: {
     secret: '',
     index: '/',

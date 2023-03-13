@@ -6,6 +6,7 @@ const config = require('./config')
 const { sleep, log, dateFormat, canTradePrice } = require('./use/utils')
 const BuySide = require('./binance/const/BuySide')
 const OrderType = require('./binance/const/OrderType')
+const KlineType = require('./binance/const/KlineType')
 const TimeInForce = require('./binance/const/TimeInForce')
 const { round } = require('mathjs')
 
@@ -31,6 +32,7 @@ async function init() {
           buy_quantity, // 当前账户拥有数量
           sell_open, // 卖单开启
           history_trade = [],
+          quick = false,
         } = trade
 
         if (!sell_open) {
@@ -42,6 +44,7 @@ async function init() {
         const sell_history_trade = [] // 要进行的卖单操作记录
 
         // 遍历买单记录
+        const [ma2, ma20] = await Api.getMaCompare(symbol, KlineType['3m'], [2, 20])  // 3min 的 kline 最近 2 条 与 最近 20 条
         const new_history_trade = await Promise.all(
           history_trade.map(async (item) => {
             // 卖单记录
@@ -56,31 +59,42 @@ async function init() {
             if (nowPrice < item.lowest_sell_price) {
               return item
             }
-            // 当前价格>预定卖出价格，继续等待，同时更新最新的买卖单价格
-            // 最初最低卖价=卖价，随着价格上涨，卖价不断上涨，最低卖价不变
-            if (nowPrice >= item.sell_price) {
-              trade.rate = rate
-              trade.buy_price = round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
-              trade.highest_buy_price = trade.buy_price // 最高买入价格
-              trade.sell_price = round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
-              trade.low_num = 0
+            if (quick) {
+              if (ma2 >= ma20) {
+                // 涨的趋势, 不卖
+                return trade
+              }
+              if (nowPrice < item.sell_price) {
+                // 低于卖价不卖
+                return item;
+              }
+            } else {
+              // 当前价格>预定卖出价格，继续等待，同时更新最新的买卖单价格
+              // 最初最低卖价=卖价，随着价格上涨，卖价不断上涨，最低卖价不变
+              if (nowPrice >= item.sell_price) {
+                trade.rate = rate
+                trade.buy_price = round(nowPrice * (1 - trade.rate / 100), 6) // 更新买入价格
+                trade.highest_buy_price = trade.buy_price // 最高买入价格
+                trade.sell_price = round(nowPrice * (1 + trade.rate / 100), 6) // 更新的卖出价格
+                trade.low_num = 0
 
-              item.sell_price = nowPrice // 将最新价格定为卖出价格，提高卖价
-              item.low_num = 0
-              return item
-            }
-            const midPrice =
-              (item.sell_price - item.lowest_sell_price) * 0.5 + item.lowest_sell_price // 最低卖价与当前卖价的中间价格
-            // 大于中间价，继续等待
-            if (nowPrice >= midPrice) {
-              item.low_num = 0
-              return item
-            }
-            // 如果前面的条件都通过，那说明当前价格小于中间价格
-            // 添加容错，第4次触发条件，才进行卖出操作
-            if (item.low_num <= 3) {
-              item.low_num += 1
-              return item
+                item.sell_price = nowPrice // 将最新价格定为卖出价格，提高卖价
+                item.low_num = 0
+                return item
+              }
+              const midPrice =
+                (item.sell_price - item.lowest_sell_price) * 0.5 + item.lowest_sell_price // 最低卖价与当前卖价的中间价格
+              // 大于中间价，继续等待
+              if (nowPrice >= midPrice) {
+                item.low_num = 0
+                return item
+              }
+              // 如果前面的条件都通过，那说明当前价格小于中间价格
+              // 添加容错，第4次触发条件，才进行卖出操作
+              if (item.low_num <= 2) {
+                item.low_num += 1
+                return item
+              }
             }
 
             // 价格回落到 (最高价格-最初卖价格) / 50% + 最初卖价格，通过容错机制，准备进行卖出操作
