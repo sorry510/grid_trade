@@ -75,6 +75,7 @@ module.exports = {
 ```
 node ./index.js  # 网格交易买单服务
 node ./sell.js  # 网格交易卖单服务
+node ./quick.js # 快速交易方式(与 index.js 和 sell.js 互斥，两种方式开一种就可以了)
 node web/back/app.js # 开启web服务，可以在线修改交易配置文件，实时生效
 ```
 
