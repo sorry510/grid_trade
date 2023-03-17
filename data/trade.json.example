@@ -6,6 +6,7 @@
       "buy_price": 0,
       "sell_price": 0,
       "buy_quantity": 0,
+      "max_quantity": 0.0015, // 最大允许拥有量
       "buy_open": true,
       "sell_open": true,
       "stop_loss": 0,
