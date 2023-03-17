@@ -126,9 +126,7 @@ async function init() {
         }
 
         // 检查是否要买入
-        const rest_quantity = max_quantity - buy_quantity
-        if (buy_open && rest_quantity > 0) {
-          quantity = rest_quantity > quantity ? quantity : rest_quantity
+        if (buy_open && buy_quantity <= 0) {
           const [m1, m2, m3] = await Api.getMaCompare(symbol, KlineType['1m'], [3, 3 * 10, 3 * 20]) // 1min的kline
           // 涨的趋势，买
           if (m1 > m2 && m2 > m3) {
